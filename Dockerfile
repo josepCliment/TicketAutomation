@@ -14,7 +14,7 @@ RUN apk add --no-cache \
     npm \
     $PHPIZE_DEPS \
     && docker-php-ext-configure gd --with-jpeg --with-webp \
-    && docker-php-ext-install gd pdo pdo_sqlite pcntl \
+    && docker-php-ext-install gd pdo pdo_pgsql pcntl \
     && pecl install imagick \
     && docker-php-ext-enable imagick \
     && usermod -u 1000 www-data \
