@@ -40,3 +40,8 @@ latest-ticket:
 
 seed:
 	$(APP) php artisan db:seed
+
+build:
+	docker compose -f docker-compose.dev.yml build --no-cache
+
+rebuild: build up

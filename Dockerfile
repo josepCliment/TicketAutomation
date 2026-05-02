@@ -13,6 +13,8 @@ RUN apk add --no-cache \
     imagemagick \
     imagemagick-dev \
     shadow \
+    nodejs \
+    npm \
     $PHPIZE_DEPS \
     && docker-php-ext-configure gd --with-jpeg --with-webp \
     && docker-php-ext-install gd pdo pdo_sqlite pcntl \
@@ -26,25 +28,19 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-COPY . .
-
-RUN composer install --no-dev --optimize-autoloader --no-interaction
-
 RUN mkdir -p storage/app/tickets \
              storage/framework/cache \
              storage/framework/sessions \
              storage/framework/views \
              storage/logs \
              database \
-             /var/log/supervisor \
-    && touch database/database.sqlite \
-    && chown -R www-data:www-data storage database bootstrap/cache \
-    && chmod -R 775 storage database bootstrap/cache
+             /var/log/supervisor
 
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/php.ini /usr/local/etc/php/conf.d/custom.ini
 
 EXPOSE 80
+EXPOSE 5173
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

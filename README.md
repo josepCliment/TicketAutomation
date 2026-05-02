@@ -1,20 +1,71 @@
 # TicketAutomation
 
-A Laravel application that processes purchase receipts using AI vision. Users upload a photo of a receipt, and the system automatically extracts the store, date, total, and products using the Gemini API.
+A Laravel application that processes purchase receipts using AI vision. Users can upload a photo of a receipt via the web UI or API, and the system automatically extracts the store, date, total, and products using the Gemini API.
 
 ---
 
 ## What it does
 
-1. User uploads a receipt image via `POST /api/tickets`
+1. User uploads a receipt image via web UI (`/tickets/create`) or `POST /api/tickets`
 2. The system queues a processing job
 3. The job calls Gemini Vision to extract structured data
 4. Products are normalized against an alias table
-5. Data is persisted and available via `GET /api/tickets/{id}`
+5. Data is persisted and available via the web dashboard or `GET /api/tickets/{id}`
 
 ---
 
-## Stack
+## Quick Start
+
+### Prerequisites
+- Docker & Docker Compose
+- `GEMINI_API_KEY` from [Google AI Studio](https://aistudio.google.com/app/apikey)
+
+### Start
+
+```bash
+make up              # Start all services
+make migrate         # Run migrations (included in Dockerfile)
+make seed            # Optional: seed product aliases
+```
+
+Then visit **http://localhost:8000/dashboard** to access the web UI.
+
+---
+
+## Web UI Features
+
+The application includes a complete web interface for managing tickets and product aliases:
+
+### 📊 Dashboard
+- View all processed tickets with pagination
+- Real-time status overview (Total, Processed, Processing, Failed)
+- Quick access to ticket details
+
+### 📤 Upload Receipts
+- Drag-and-drop file upload
+- Select store name and expense category
+- Visual feedback during upload
+- Automatic async processing
+
+### 🔍 View & Edit Tickets
+- Detailed ticket view with all extracted data
+- Product listing with quantities and prices
+- Edit extracted data (store, category, date, total)
+- Raw JSON view for debugging
+
+### 🏷️ Manage Product Aliases
+- Create mappings between product name variants
+- Normalize products across multiple tickets
+- CRUD interface for alias management
+- Example: "ESPUMA POLIURET 650ML" → "ESPUMA POLIURETANO EXPANDIBLE"
+
+### 🎨 Design
+- **Responsive** design for mobile and desktop
+- **Dark mode** support with Tailwind CSS
+- **Color-coded status** badges for quick identification
+- **Accessible** forms and navigation
+
+---
 
 | Component | Technology |
 |---|---|
@@ -222,11 +273,10 @@ $this->app->singleton(TicketProcessorRegistry::class, function ($app) {
 ## Roadmap
 
 ### Features
-- [ ] **UI/UX** — Web interface to view tickets, edit incorrect data, and manage aliases
+- [x] **UI/UX** — Web interface to view tickets, edit incorrect data, and manage aliases
 - [ ] **`GET /api/tickets`** — Paginated ticket listing with filters by store, category, and status
-- [ ] **Edit endpoint** — `PATCH /api/tickets/{id}` to correct incorrectly processed data
-- [ ] **Alias management** — CRUD for `product_aliases` from the UI
-- [ ] **Image validation** — Reject low-quality images before processing
+- [ ] **Bulk upload** — Upload multiple receipts at once
+- [ ] **Statistics** — Charts and analytics dashboard
 - [ ] **Automatic category detection** — Detect ticket category via Gemini instead of sending it manually
 - [ ] **Multi-store support** — Add processors for more stores
 
@@ -235,3 +285,4 @@ $this->app->singleton(TicketProcessorRegistry::class, function ($app) {
 - [ ] **Coolify deploy** — Configure production `docker-compose.yml`
 - [ ] **Rate limiting** — Control Gemini API consumption
 - [ ] **Smart retries** — Handle Gemini failures with exponential backoff
+- [ ] **User authentication** — Multi-user support with roles

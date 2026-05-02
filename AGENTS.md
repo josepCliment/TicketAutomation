@@ -12,16 +12,23 @@
 
 ### Key Components
 
-1. **HTTP API Layer** (`app/Http/Controllers/TicketController.php`)
-   - `POST /tickets` - Creates ticket, stores image, queues async processing
-   - `GET /tickets/{id}` - Returns ticket with products (via Resource layer)
+1. **HTTP Web UI Layer** (`app/Http/Controllers/{Dashboard,TicketUI,ProductAlias}Controller.php`)
+   - Dashboard: `GET /dashboard` - Lists tickets with stats and filters
+   - Tickets: `GET /tickets/create`, `POST /tickets`, `GET /tickets/{id}`, `PATCH/DELETE`
+   - Aliases: CRUD operations at `/aliases/*`
+   - Uses Blade templates with Tailwind CSS for responsive, dark-mode UI
 
-2. **Async Job Processing** (`app/Jobs/ProcessTicket.php`)
+2. **HTTP API Layer** (`app/Http/Controllers/TicketController.php`)
+   - `POST /api/tickets` - Creates ticket, stores image, queues async processing
+   - `GET /api/tickets/{id}` - Returns ticket with products (via Resource layer)
+   - For programmatic access (mobile apps, external integrations)
+
+3. **Async Job Processing** (`app/Jobs/ProcessTicket.php`)
    - Listens via queue listener (see `composer.json` dev script)
    - Coordinates AI extraction and data persistence
    - Status transitions: `Queued → Processing → Processed/Failed`
 
-3. **Processor Registry Pattern** (`app/Services/Tickets/TicketProcessorRegistry.php`)
+4. **Processor Registry Pattern** (`app/Services/Tickets/TicketProcessorRegistry.php`)
    - **Registry** resolves store-specific processor (e.g., `ObramatTicketProcessor`)
    - Each processor extends `AbstractTicketProcessor` with:
      - `supports(storeName)` - Declares which store it handles
@@ -29,12 +36,12 @@
      - `prompt()` - Overridable Gemini extraction prompt
    - **Adding new stores:** Create `app/Services/Tickets/Processors/{Store}TicketProcessor.php` extending `AbstractTicketProcessor`, register in `AppServiceProvider`
 
-4. **AI Extraction** (`AbstractTicketProcessor::process()`)
+5. **AI Extraction** (`AbstractTicketProcessor::process()`)
    - Encodes image to base64, sends to Gemini with JSON extraction prompt
    - Strips markdown formatting from response
    - Returns `TicketDataDTO` with structured data
 
-5. **Data Persistence** (`app/Services/Tickets/TicketPersister.php`)
+6. **Data Persistence** (`app/Services/Tickets/TicketPersister.php`)
    - Normalizes products via `ProductNormalizer` (deduplica via aliases)
    - Creates ticket record + related `TicketProduct` entries
    - Updates status to `Processed`
@@ -77,6 +84,67 @@ make logs            # Stream app logs
 - **Gemini API:** Configure `GEMINI_API_KEY` in `.env` (config/gemini.php)
 - **Image Storage:** `storage/app/tickets/` (local disk)
 - **Database:** SQLite at `database/database.sqlite`
+
+---
+
+## Project-Specific Patterns & Conventions
+
+### Web UI Architecture (Blade Templates + Tailwind CSS)
+- All web views in `resources/views/` with `.blade.php` extension
+- Base layout at `layouts/app.blade.php` provides navigation, flash messages, error handling
+- Dark mode support via Tailwind's `dark:` variant and CSS custom properties
+- Responsive design using Tailwind breakpoints (`sm`, `md`, `lg`, `xl`, `2xl`)
+- Color scheme: Blue (primary), Green (success), Red (error), Amber (warning), Gray (neutral)
+- Controllers: `DashboardController`, `TicketUIController`, `ProductAliasController` handle web routes
+- Web routes at `/dashboard`, `/tickets/*`, `/aliases/*` (see `routes/web.php`)
+
+### Service-Oriented Design
+- Services handle business logic, not controllers (clean separation)
+- Use constructor injection throughout (Laravel container manages DI)
+
+### DTO Pattern
+- `TicketDataDTO` transfers data between processor and persister (immutable value object)
+- Ensures type safety across async boundary
+
+### Registry Pattern for Store-Specific Logic
+- New store support **doesn't require** controller/route changes
+- Processors auto-discovered and registered via service container
+- Supports multiple simultaneous ticket sources
+
+### Enum-Based Status & Category Management
+- Backed enums (string-based) ensure type safety and database consistency
+- `TicketStatusEnum::Processing->value` yields `'processing'` for DB storage
+
+### Resource Layer for API Responses
+- `TicketResource` transforms models to JSON (eager-loads relations)
+- Consistent API response format
+
+---
+
+## Web UI Workflows
+
+### Dashboard
+- Lists all tickets with pagination (10 per page by default)
+- Displays stats: Total, Processed, Processing, Failed
+- Color-coded status badges for quick status identification
+- Quick actions: View, Edit (for processed only)
+
+### Upload Ticket
+- Drag-and-drop file upload with visual feedback
+- Form validates store name, category, image format/size
+- Submits to `POST /tickets` (web route), redirects to ticket detail
+- Async processing via `ProcessTicket` job
+
+### View/Edit Ticket
+- **Show**: Display all extracted data, products, raw JSON for debugging
+- **Edit**: Correct store, category, date, total (products are read-only)
+- Only processed tickets can be edited
+- Changes saved to database immediately
+
+### Manage Aliases
+- List, create, update, delete product name mappings
+- Aliases used during `ProductNormalizer::normalize()` to deduplicate products
+- Example: "ESPUMA POLIURET 650ML" → "ESPUMA POLIURETANO EXPANDIBLE"
 
 ---
 
