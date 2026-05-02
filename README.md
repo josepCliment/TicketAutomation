@@ -24,7 +24,7 @@ A Laravel application that processes purchase receipts using AI vision. Users ca
 
 ```bash
 make up              # Start all services
-make migrate         # Run migrations (included in Dockerfile)
+make migrate         # Run migrations (included in Dockerfile.dev)
 make seed            # Optional: seed product aliases
 ```
 
