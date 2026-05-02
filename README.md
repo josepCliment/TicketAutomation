@@ -1,59 +1,237 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# TicketAutomation
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A Laravel application that processes purchase receipts using AI vision. Users upload a photo of a receipt, and the system automatically extracts the store, date, total, and products using the Gemini API.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## What it does
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+1. User uploads a receipt image via `POST /api/tickets`
+2. The system queues a processing job
+3. The job calls Gemini Vision to extract structured data
+4. Products are normalized against an alias table
+5. Data is persisted and available via `GET /api/tickets/{id}`
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Stack
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+| Component | Technology |
+|---|---|
+| Backend | Laravel 11 (PHP 8.3) |
+| Database | SQLite |
+| Job Queue | Laravel Queue (database driver) |
+| Process Supervisor | Supervisord |
+| AI / OCR | Google Gemini 2.5 Flash |
+| Web Server | Nginx |
+| Containers | Docker + Docker Compose |
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-## Laravel Sponsors
+## Architecture
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```
+POST /api/tickets
+       │
+       ▼
+TicketController         → Stores image, creates Ticket (status: queued), dispatches job
+       │
+       ▼
+ProcessTicket (Job)      → Orchestrates the processing pipeline
+       │
+       ├─► TicketProcessorRegistry   → Resolves the correct processor by store name
+       │         │
+       │         ▼
+       │   AbstractTicketProcessor   → Calls Gemini Vision with the image
+       │         │
+       │         ▼
+       │   ObramatTicketProcessor    → Store-specific implementation
+       │
+       ├─► ProductNormalizer         → Normalizes product names via alias table
+       │
+       └─► TicketPersister           → Persists ticket and products to the database
+```
 
-### Premium Partners
+### Models
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+**Ticket**
+- `store` — store name
+- `category` — expense category (enum)
+- `purchased_at` — purchase date
+- `total` — total amount
+- `processor` — class that processed the ticket
+- `raw_text` — raw JSON returned by Gemini
+- `status` — processing status (enum: queued, processing, processed, failed)
 
-## Contributing
+**TicketProduct**
+- `ticket_id` — FK to ticket
+- `name` — normalized product name
+- `original_name` — original name extracted by Gemini
+- `quantity` — quantity
+- `unit_price` — unit price
+- `price` — line total
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+**ProductAlias**
+- `alias` — abbreviated name as it appears on the receipt
+- `canonical_name` — normalized canonical name
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Project Structure
 
-## Security Vulnerabilities
+```
+app/
+├── Enums/
+│   ├── TicketCategoryEnum.php
+│   └── TicketStatusEnum.php
+├── Http/
+│   ├── Controllers/TicketController.php
+│   ├── Requests/StoreTicketRequest.php
+│   └── Resources/
+│       ├── TicketResource.php
+│       └── TicketProductResource.php
+├── Jobs/
+│   └── ProcessTicket.php
+├── Models/
+│   ├── Ticket.php
+│   ├── TicketProduct.php
+│   └── ProductAlias.php
+└── Services/
+    ├── Normalizer/
+    │   └── ProductNormalizer.php
+    └── Tickets/
+        ├── AbstractTicketProcessor.php
+        ├── TicketDataDTO.php
+        ├── TicketPersister.php
+        ├── TicketProcessorRegistry.php
+        └── Processors/
+            └── ObramatTicketProcessor.php
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
-## License
+## API
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### `POST /api/tickets`
+
+Upload a receipt for processing.
+
+**Request** (multipart/form-data)
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| image | file | ✅ | Receipt image (jpg, png) |
+| store | string | ✅ | Store name |
+| category | string | ❌ | Expense category |
+
+**Response** `202 Accepted`
+```json
+{
+  "id": 1,
+  "status": "queued"
+}
+```
+
+---
+
+### `GET /api/tickets/{id}`
+
+Retrieve the processed data for a ticket.
+
+**Response** `200 OK`
+```json
+{
+  "data": {
+    "id": 1,
+    "store": "Obramat",
+    "category": "tejado",
+    "purchased_at": "2026-04-08",
+    "total": "93.60",
+    "status": "processed",
+    "products": [
+      {
+        "id": 1,
+        "name": "ESPUMA POLIURETANO EXPANDIBLE",
+        "original_name": "ESPUMA POLIURET 650ML MANUAL",
+        "quantity": 24,
+        "unit_price": 3.90,
+        "price": 93.60
+      }
+    ]
+  }
+}
+```
+
+---
+
+## Local Development
+
+### Requirements
+- Docker
+- Docker Compose
+
+### Start the environment
+
+```bash
+make up
+```
+
+### Available commands
+
+```bash
+make up              # Start containers
+make down            # Stop containers
+make restart         # Full restart
+make shell           # Access the container
+make migrate         # Run migrations
+make migrate-fresh   # Reset the database
+make seed            # Run seeders
+make cache-clear     # Clear all caches
+make latest-ticket   # Dump the latest processed ticket
+make logs            # Tail logs in real time
+```
+
+### Relevant environment variables
+
+```env
+GEMINI_API_KEY=        # Google AI Studio API key
+TELESCOPE_ENABLED=     # Enable/disable Laravel Telescope
+```
+
+---
+
+## Adding Support for a New Store
+
+1. Create a new processor in `app/Services/Tickets/Processors/`
+2. Extend `AbstractTicketProcessor`
+3. Implement `supports(string $storeName): bool`
+4. Implement `storeName(): string`
+5. Register it in `AppServiceProvider`
+
+```php
+$this->app->singleton(TicketProcessorRegistry::class, function ($app) {
+    return new TicketProcessorRegistry([
+        $app->make(ObramatTicketProcessor::class),
+        $app->make(NewStoreTicketProcessor::class), // add here
+    ]);
+});
+```
+
+---
+
+## Roadmap
+
+### Features
+- [ ] **UI/UX** — Web interface to view tickets, edit incorrect data, and manage aliases
+- [ ] **`GET /api/tickets`** — Paginated ticket listing with filters by store, category, and status
+- [ ] **Edit endpoint** — `PATCH /api/tickets/{id}` to correct incorrectly processed data
+- [ ] **Alias management** — CRUD for `product_aliases` from the UI
+- [ ] **Image validation** — Reject low-quality images before processing
+- [ ] **Automatic category detection** — Detect ticket category via Gemini instead of sending it manually
+- [ ] **Multi-store support** — Add processors for more stores
+
+### Infrastructure
+- [ ] **Tests** — Coverage for `ProductNormalizer`, `TicketPersister`, and processors
+- [ ] **Coolify deploy** — Configure production `docker-compose.yml`
+- [ ] **Rate limiting** — Control Gemini API consumption
+- [ ] **Smart retries** — Handle Gemini failures with exponential backoff
