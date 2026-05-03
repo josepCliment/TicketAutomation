@@ -6,6 +6,7 @@ RUN apk add --no-cache \
     libpng-dev \
     libjpeg-turbo-dev \
     libwebp-dev \
+    postgresql-dev \
     shadow \
     nodejs \
     npm \
