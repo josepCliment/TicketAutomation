@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('name')->unique();
             $table->string('slug')->unique();
             $table->json('match_keywords');
+
             $table->boolean('active')->default(true);
             $table->timestamps();
         });
