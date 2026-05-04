@@ -35,6 +35,12 @@
                         <a href="{{ route('aliases.index') }}" class="px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
                             Aliases
                         </a>
+                        <form method="POST" action="{{ route('logout') }}" class="inline">
+                            @csrf
+                            <button type="submit" class="px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-red-600 dark:text-red-400">
+                                Logout
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>

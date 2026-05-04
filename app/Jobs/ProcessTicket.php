@@ -4,9 +4,9 @@ namespace App\Jobs;
 
 use App\Enums\TicketStatusEnum;
 use App\Models\Ticket;
-use App\Services\Normalizer\ProductNormalizer;
+use App\Services\Tickets\StoreResolver;
 use App\Services\Tickets\TicketPersister;
-use App\Services\Tickets\TicketProcessorRegistry;
+use App\Services\Tickets\TicketProcessor;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
@@ -30,22 +30,18 @@ class ProcessTicket implements ShouldQueue
     {
     }
 
-    public function handle(TicketProcessorRegistry $registry, TicketPersister $persister): void
-    {
-
+    public function handle(
+        StoreResolver $storeResolver,
+        TicketProcessor $processor,
+        TicketPersister $persister,
+    ): void {
         $ticket = Ticket::findOrFail($this->ticketId);
         $ticket->update(['status' => TicketStatusEnum::Processing]);
 
         $absolutePath = Storage::disk('local')->path($this->imagePath);
 
-        Log::info('Processing ticket', [
-            'ticket_id' => $ticket->id,
-            'store' => $ticket->store,
-            'path' => $absolutePath,
-        ]);
-
-        $processor = $registry->resolve($ticket->store);
-        $data = $processor->process($absolutePath);
+        $store = $storeResolver->resolve($ticket->store);
+        $data  = $processor->process($absolutePath, $store);
 
         $persister->persist($ticket, $data);
 

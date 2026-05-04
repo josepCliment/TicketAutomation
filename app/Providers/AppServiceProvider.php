@@ -2,8 +2,7 @@
 
 namespace App\Providers;
 
-use App\Services\Tickets\Processors\ObramatTicketProcessor;
-use App\Services\Tickets\TicketProcessorRegistry;
+use App\Services\Tickets\TicketProcessor;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -18,11 +17,7 @@ class AppServiceProvider extends ServiceProvider
             $this->app->register(TelescopeServiceProvider::class);
         }
 
-        $this->app->singleton(TicketProcessorRegistry::class, function ($app) {
-            return new TicketProcessorRegistry([
-                $app->make(ObramatTicketProcessor::class),
-            ]);
-        });
+        $this->app->singleton(TicketProcessor::class);
     }
 
     /**
