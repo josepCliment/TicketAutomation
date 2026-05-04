@@ -4,7 +4,7 @@ on:
     branches: ["master"]  # Trigger on pushes to main branch
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: "andrasbacsai/github-actions-with-coolify"
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-deploy:
