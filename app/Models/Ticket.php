@@ -17,6 +17,7 @@ class Ticket extends Model
         'processor',
         'raw_text',
         'status',
+        'user_id',
     ];
 
     protected $casts = [

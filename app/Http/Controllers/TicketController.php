@@ -18,6 +18,7 @@ class TicketController extends Controller
         $path = $request->file('image')->store('tickets', 'local');
 
         $ticket = Ticket::create([
+            'user_id' => auth()->id(),
             'store'        => $request->string('store'),
             'category'     => $request->input('category', TicketCategoryEnum::Otros->value),
             'purchased_at' => now()->toDateString(),
@@ -36,6 +37,8 @@ class TicketController extends Controller
 
     public function show(Ticket $ticket): JsonResponse
     {
+        $this->authorize('view', $ticket);
+
         return (new TicketResource($ticket->load('products')))->response();
     }
 }
