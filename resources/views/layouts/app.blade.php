@@ -32,9 +32,22 @@
                         <a href="{{ route('tickets.create') }}" class="px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
                             Upload
                         </a>
-                        <a href="{{ route('aliases.index') }}" class="px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
-                            Aliases
-                        </a>
+                        <div class="relative group">
+                            <button class="px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
+                                Settings ▼
+                            </button>
+                            <div class="absolute right-0 mt-0 w-48 bg-white dark:bg-gray-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                                <a href="{{ route('aliases.index') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 first:rounded-t-lg">
+                                    Product Aliases
+                                </a>
+                                <a href="{{ route('categories.index') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600">
+                                    Categories
+                                </a>
+                                <a href="{{ route('stores.index') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 last:rounded-b-lg">
+                                    Stores
+                                </a>
+                            </div>
+                        </div>
                         <form method="POST" action="{{ route('logout') }}" class="inline">
                             @csrf
                             <button type="submit" class="px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 text-red-600 dark:text-red-400">

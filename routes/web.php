@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductAliasController;
+use App\Http\Controllers\StoreController;
 use App\Http\Controllers\TicketUIController;
 use Illuminate\Support\Facades\Route;
 
@@ -35,5 +37,21 @@ Route::middleware('auth')->group(function () {
     Route::get('/aliases/{alias}/edit', [ProductAliasController::class, 'edit'])->name('aliases.edit');
     Route::patch('/aliases/{alias}', [ProductAliasController::class, 'update'])->name('aliases.update');
     Route::delete('/aliases/{alias}', [ProductAliasController::class, 'destroy'])->name('aliases.destroy');
+
+    // Categories
+    Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
+    Route::get('/categories/create', [CategoryController::class, 'create'])->name('categories.create');
+    Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
+    Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
+    Route::patch('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
+    Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+
+    // Stores
+    Route::get('/stores', [StoreController::class, 'index'])->name('stores.index');
+    Route::get('/stores/create', [StoreController::class, 'create'])->name('stores.create');
+    Route::post('/stores', [StoreController::class, 'store'])->name('stores.store');
+    Route::get('/stores/{store}/edit', [StoreController::class, 'edit'])->name('stores.edit');
+    Route::patch('/stores/{store}', [StoreController::class, 'update'])->name('stores.update');
+    Route::delete('/stores/{store}', [StoreController::class, 'destroy'])->name('stores.destroy');
 });
 
