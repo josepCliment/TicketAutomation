@@ -17,7 +17,7 @@ class TicketSeeder extends Seeder
 
         Store::updateOrCreate(['slug' => 'ibanez'], [
             'name'           => 'Ibañez',
-            'match_keywords' => ['ibanez', 'ibañez', 'santiago iba'],
+            'match_keywords' => ['ibanez', 'ibañez'],
         ]);
 
         $categories = [
