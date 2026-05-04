@@ -31,18 +31,31 @@ class ProcessTicket implements ShouldQueue
     }
 
     public function handle(
-        StoreResolver $storeResolver,
+        StoreResolver   $storeResolver,
         TicketProcessor $processor,
         TicketPersister $persister,
-    ): void {
+    ): void
+    {
         $ticket = Ticket::findOrFail($this->ticketId);
         $ticket->update(['status' => TicketStatusEnum::Processing]);
 
         $absolutePath = Storage::disk('local')->path($this->imagePath);
 
         $store = $storeResolver->resolve($ticket->store);
-        $data  = $processor->process($absolutePath, $store);
+        try {
+            $data = $processor->process($absolutePath, $store);
 
+        } catch (\Exception $e) {
+
+            if ($this->isQuotaError($e)) {
+                $delay = $this->extractRetryDelay($e);
+                $this->release($delay);
+
+                return;
+            }
+
+            throw $e;
+        }
         $persister->persist($ticket, $data);
 
         Storage::disk('local')->delete($this->imagePath);
@@ -59,5 +72,19 @@ class ProcessTicket implements ShouldQueue
             ->update(['status' => TicketStatusEnum::Failed]);
 
         Storage::disk('local')->delete($this->imagePath);
+    }
+
+    private function isQuotaError($e): bool
+    {
+        return str_contains($e->getMessage(), 'quota') ||
+            str_contains($e->getMessage(), 'rate limit');
+    }
+
+    private function extractRetryDelay($e): int
+    {
+        if (preg_match('/retry in ([\d.]+)s/i', $e->getMessage(), $matches)) {
+            return (int)ceil($matches[1]);
+        }
+        return min(300, pow(2, $this->attempts()));
     }
 }

@@ -39,6 +39,7 @@ class TicketController extends Controller
 
     public function show(Ticket $ticket): JsonResponse
     {
+        dump($ticket);
         $this->authorize('view', $ticket);
 
         return (new TicketResource($ticket->load('products')))->response();
