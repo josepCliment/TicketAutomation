@@ -112,6 +112,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Qty</th>
                             <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Unit Price</th>
                             <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Total</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -126,6 +127,15 @@
                                 <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ $product->quantity }}</td>
                                 <td class="px-6 py-4 text-right text-sm text-gray-600 dark:text-gray-400">${{ number_format($product->unit_price, 2) }}</td>
                                 <td class="px-6 py-4 text-right text-sm font-medium text-gray-900 dark:text-white">${{ number_format($product->price, 2) }}</td>
+                                <td class="px-6 py-4 text-center">
+                                    <form method="POST" action="{{ route('products.destroy', [$ticket, $product->id]) }}" style="display: inline;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" onclick="return confirm('Are you sure you want to delete this product?')" class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 font-medium text-sm transition">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>

@@ -79,4 +79,13 @@ class TicketUIController extends Controller
         return redirect()->route('dashboard')
             ->with('success', 'Ticket deleted successfully.');
     }
+
+    public function destroyProduct(Ticket $ticket, $productId): RedirectResponse
+    {
+        $product = $ticket->products()->findOrFail($productId);
+        $product->delete();
+
+        return redirect()->route('tickets.show', $ticket)
+            ->with('success', 'Product deleted successfully.');
+    }
 }

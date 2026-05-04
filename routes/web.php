@@ -26,6 +26,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/tickets/{ticket}/edit', [TicketUIController::class, 'edit'])->name('tickets.edit');
     Route::patch('/tickets/{ticket}', [TicketUIController::class, 'update'])->name('tickets.update');
     Route::delete('/tickets/{ticket}', [TicketUIController::class, 'destroy'])->name('tickets.destroy');
+    Route::delete('/tickets/{ticket}/products/{product}', [TicketUIController::class, 'destroyProduct'])->name('products.destroy');
 
     // Product Aliases
     Route::get('/aliases', [ProductAliasController::class, 'index'])->name('aliases.index');
