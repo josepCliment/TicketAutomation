@@ -8,11 +8,13 @@ use App\Http\Requests\StoreTicketRequest;
 use App\Http\Resources\TicketResource;
 use App\Jobs\ProcessTicket;
 use App\Models\Ticket;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 
 class TicketController extends Controller
 {
+    use AuthorizesRequests;
     public function store(StoreTicketRequest $request): JsonResponse
     {
         $path = $request->file('image')->store('tickets', 'local');
